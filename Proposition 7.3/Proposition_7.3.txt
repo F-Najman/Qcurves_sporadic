@@ -1,0 +1,16 @@
+E:=EllipticCurveWithjInvariant(-3^3*13*479^3/2^14);
+Factorization(DivisionPolynomial(E,2));
+R<x>:=PolynomialRing(Rationals());
+K<a>:=NumberField(R![16384/38603997441, 65536/4289333049, 1/4, 1]);
+
+//K is the field extension over which E attains a point of order 2.                         
+
+_<y>:=PolynomialRing(K);
+K1:=ext<K|y^6 + y^5 + y^4 + y^3 + y^2 + y + 1>;
+
+//This is K(zeta_7).
+
+E1:=ChangeRing(E,K1); 
+Factorization(DivisionPolynomial(E1,7));
+
+//A similar argument can be made for an elliptic curve with j-invariant 3^3*13/2^2.

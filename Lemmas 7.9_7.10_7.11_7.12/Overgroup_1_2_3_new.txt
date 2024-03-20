@@ -1,0 +1,39 @@
+load "load.txt";
+GL18:=GL(2,Integers(18));
+min:=MinimalOvergroups(GL18,reduce(Overgroup1,18));
+GL2Genus(min[1]);
+A:=min[1];
+IsConjugateSubgroup(GL18,A,reduce(Overgroup2,18));
+IsConjugateSubgroup(GL18,A,reduce(Overgroup3,18));
+
+\\so, we conclude that the modular curves corrsponding to O1,O2,O3 all map to the modular curve corresponding to A
+
+A3:=reduce(A,3);
+_<t>:=FunctionField(Rationals());
+b3:=729/(t^3-27);
+j3:=(b3+3)^3*(b3+27)/b3;
+E:=EllipticCurveFromjInvariant(j3);
+d:=Discriminant(E);
+Factorization(Numerator(d)*Denominator(d));
+
+//the square free part is: f(x)=(x-3)*(x^2+3*x+9);
+_<x>:=PolynomialRing(Rationals());
+E1:=EllipticCurve((x-3)*(x^2+3*x+9));
+K<w>:=QuadraticField(-3);
+E:=ChangeRing(E1,K);
+DescentInformation(E);
+g,m:=TorsionSubgroup(E);
+for i:= 1 to 6 do 
+z:=(i*m(g.2))[1];
+if Evaluate(Denominator(j3),z) ne 0 and (i*m(g.2))[3] ne 0 then z,Evaluate(j3,z); else print z,"cusp"; end if;  
+z:=(m(g.1)+i*m(g.2))[1];
+if Evaluate(Denominator(j3),z) ne 0 and (m(g.1)+i*m(g.2))[3] ne 0then z,Evaluate(j3,z); else print z,"cusp"; end if;
+end for;
+
+
+
+
+
+
+
+

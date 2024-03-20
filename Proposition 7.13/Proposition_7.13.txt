@@ -1,0 +1,24 @@
+E1 := EllipticCurveWithjInvariant(1792);
+Factorization(DivisionPolynomial(E1,4) div DivisionPolynomial(E1,2));
+//This show that E1 corresponds to a single point on X_0(4) which has degree 6.
+
+K<w>:=Subfields(CyclotomicField(7),3)[1,1]; 
+//K is the field over which E1 attains full 2-torsion.
+
+E:=ChangeRing(E1,K);
+
+E2:=IsogenyFromKernel(E,Factorization(DivisionPolynomial(E,2))[1,1]);
+
+//E2 is an elliptic curve which is 2-isogenous to E over K.
+
+f2:=DivisionPolynomial(E2,2);
+f4:=DivisionPolynomial(E2,4);
+h4:=f4 div f2;
+f3:=DivisionPolynomial(E2,3);
+f6:=DivisionPolynomial(E2,6);
+h6:=f6 div (f2*f3);
+f12:=DivisionPolynomial(E2,12);
+h12:=f12 div (h6*h4*f3*f2);
+Factorization(h12);
+//Any point on X_1(12) associated to E2 will have even degree. Similarly, we find the same is true for any other elliptic curve 2-isogenous to E.
+

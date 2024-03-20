@@ -1,0 +1,144 @@
+// 9C0-9a is the group to which all the modular curves map
+load "load.txt";
+print "testing 9C0-9a";
+Hb:=sub<GL9 | GL9![2,0,0,5], GL9![4,2,3,4], GL9![1,0,0,2]>;
+assert reduce(Overgroup8,9) eq Hb;
+
+
+
+
+// we compute the j-map of the mod 9 representation group and the hauptmodul -- this is for the group 9C0!!
+
+K:=Rationals();
+F<t>:=PolynomialRing(K);
+F<t>:=FieldOfFractions(F);
+L<q>:=LaurentSeriesRing(F,600);
+MF<x> := FunctionField(Rationals());
+b3 := x^3;
+j2 := (b3+3)^3*(b3+27)/b3;
+LL<qq>:=LaurentSeriesRing(Rationals(),200);
+j:=LL!qExpansionsOfGenerators(1,LL,200)[1]; 
+num:=Numerator(j2);
+den:=Denominator(j2);
+j3:=Evaluate(j,q^3); 
+h:=t*q+O(q^2);
+Evaluate(num,h)/Evaluate(den,h)-j3;
+h:=9*q+O(q^2);
+Evaluate(num,h)/Evaluate(den,h)-j3;
+
+prec:=200;
+m:=9*q;
+prec:=200;
+for n in [2..prec] do
+    m1:=m+t*q^n+O(q^(n+1));
+    df:=Evaluate(num,m1)-j3*(Evaluate(den,m1));
+    eqn:=Coefficient(df,n-1);
+    cfs:=Coefficients(Numerator(eqn)); //linear in t
+    an:=-cfs[1]/cfs[2];
+    assert Evaluate(Numerator(eqn),an) eq 0;
+    m:=m+an*q^n;
+end for;
+haupt:=m+O(q^200);
+Evaluate(num,m)/(Evaluate(den,m))-j3;
+
+
+//We now compute Overgroup8 -  we get the exact correct model over Q
+
+f,psi,F:=FindCanonicalModel(realize(reduce(Overgroup8,18),18),600: ReturnBasis:=true);
+K:=Parent(Coefficients(F[1])[1]);
+L<q>:=LaurentSeriesRing(K,600);
+F:=[&+[Coefficient(L!f,3*n)*q^n : n in [1..200]] : f in F]; //q^3 -> q
+L<q>:=LaurentSeriesRing(K,200);
+F:=[L!f : f in F];
+f1:=F[1];
+f2:=F[2];
+f1:=f1/Coefficient(f1,1);
+f2:=f2-Coefficient(f2,1)/Coefficient(f1,1)*f1; 
+f2:=f2/Coefficient(f2,2); 
+x:=f1/f2;
+y:=q*Derivative(x)/f2;
+dif:=y^2-x^6;
+a5:=Coefficient(dif,-5);
+dif:=dif-a5*x^5;
+a4:=Coefficient(dif,-4);
+dif:=dif-a4*x^4;
+a3:=Coefficient(dif,-3);
+dif:=dif-a3*x^3;
+a2:=Coefficient(dif,-2);
+dif:=dif-a2*x^2;
+a1:=Coefficient(dif,-1);
+dif:=dif-a1*x;
+a0:=Coefficient(dif,0);
+dif:=dif-a0;
+dif;
+P<z>:=PolynomialRing(K);
+f:=z^6+a5*z^5+a4*z^4+a3*z^3+a2*z^2+a1*z+a0;
+fQ:=f;
+C:=HyperellipticCurve(fQ);
+CQ:=ChangeRing(HyperellipticCurve(fQ),Rationals());
+L<q>:=LaurentSeriesRing(Rationals(),200);
+vary:=L!y;
+varx:=L!x;
+haupt:=L!haupt;
+
+
+
+qE3:=Evaluate(L!haupt,q^2)+O(q^200);
+tf:=false;
+d:=0;
+while tf eq false do
+d:=d+1;
+d;
+R:=PolynomialRing(Rationals(),2);
+mons:=&cat[Setseq(MonomialsOfDegree(R,e)) : e in [0..d]];
+//mons:=MonomialsOfDegree(R,d);
+m:=#mons;
+m;
+k:=prec-100;
+Zm:=VectorSpace(Rationals(),(2*#mons));
+Zk:=VectorSpace(Rationals(),151);
+h:=hom<Zm -> Zk | [[Coefficient(Evaluate(mons[i],[varx,vary])*qE3,j) : j in [-10..140]] : i in [1..m]] cat [[Coefficient(Evaluate(-mons[i],[varx,vary]),j) : j in [-10..140]] : i in [1..m]]>;
+K:=Kernel(h);
+for v in Basis(K) do
+if not &+[Eltseq(v)[j] : j in [1..#mons]] eq 0 and not &+[Eltseq(v)[j+#mons] : j in [1..#mons]] eq 0   then
+vseq:=Eltseq(v);
+tf:=true;
+end if; 
+end for;
+end while;
+K:=Subfields(CyclotomicField(9),3)[1,1];
+CQ:=BaseChange(CQ,K);
+
+F<xx,yy>:=FunctionField(CQ);
+X:=CQ;
+Z:=Curve(ProjectiveSpace(K,1));
+theeqn:=Evaluate(&+[vseq[i+#mons]*mons[i] : i in [1..#mons]],[xx,yy])/Evaluate(&+[vseq[i]*mons[i] : i in [1..#mons]],[xx,yy]);
+thefn:=ProjectiveFunction(theeqn);
+themap:=map<X->Z | [Numerator(thefn),Denominator(thefn)]>;
+deg:=Degree(themap);
+Evaluate(Numerator(thefn),[varx,vary,1])-qE3*Evaluate(Denominator(thefn),[varx,vary,1]);
+CR<x,y>:=CoordinateRing(AmbientSpace(Z));
+Fnc:=FunctionField(Z);
+jns7:=Evaluate(Numerator(j2),Fnc!(x/y))/Evaluate(Denominator(j2),Fnc!(x/y));
+jX:=Pullback(themap,jns7);
+
+pts:=RationalPoints(CQ:Bound:=20);
+for i:=1 to #pts do 
+Evaluate(jX,pts[i]);
+end for;
+
+
+
+//this is proof that C has 12 points over Q(\zeta_9)^+
+	
+aut:=Automorphisms(CQ);
+G:=AutomorphismGroup(CQ,[aut[3]]);
+E,f:=CurveQuotient(G);
+DescentInformation(E);
+A:={@ @};
+g,m:=TorsionSubgroup(E);
+#g;
+for i:=1 to #g do 
+A:=A join Points((m(i*g.1)) @@ f);
+end for;
+assert A eq pts;

@@ -1,0 +1,210 @@
+/* We use code from the papers "Computing actions on cusp forms" by David Zywina and "l-adic images of Galois for elliptic curves over Q", by Jeremy Rouse, Andrew V. Sutherland, and David Zureick-Brown
+
+
+load "ComputeAtkinLehner.txt";
+load "gl2data.m";
+GL9 := GL(2,Integers(9));                                                                                                                                                       
+GL27 := GL(2,Integers(27));
+
+Hb:=sub<GL9 | GL9![1,3,0,1], GL9![5,0,3,2], GL9![2,1,0,1]>;
+
+
+function FindCanonicalModel(G,prec :ReturnBasis:=false)
+/* 	This function is a modification of a function of Zywina which was provided to us by Josha Box.
+	Input: G: a subgroup of GL(2,Z/NZ) with full determinant and contains -I with N>1.
+	  prec: a positive integer to indicate how many terms of a q-expansion to use for computations.
+    Output:
+        g: the genus g of X_G.
+        psi: a set of generator of the homogeneous ideal of the image of a canonical map X_G -> P^{g-1}_Q.   
+        If "ReturnBasis" is true, then we also return a basis f_1,..,f_g of S_k(Gamma(N),Q(zeta_N))^G such that F(f_1,...,f_g)=0 for all F in psi.
+*/
+    N:=#BaseRing(G);
+    F:=ComputeModularFormsForXG(G,2,prec);
+    g:=#F;
+    Pol<[x]>:=PolynomialRing(Rationals(),g);
+
+    if g le 2 then 
+        if ReturnBasis then return g, [], F; else return g, []; end if;
+    end if;
+
+    function ComputeId(F,d)
+        // Compute a basis for I_d; the d-th graded component of the ideal I of the canonical curve.
+        mon:=[m: m in MonomialsOfWeightedDegree(Pol,d)];
+        C:=[Evaluate(f,F):f in mon];
+        C:=[ &cat[Eltseq(Coefficient(f,n)): n in [1..prec]]: f in C];
+        C:=ChangeRing(Matrix(C),Integers());
+        L:=Kernel(C); 
+        L:=Matrix(Basis(L)); 
+        L:=LLL(L);
+        psi:=[ &+[L[i,j]*mon[j]: j in [1..#mon]] : i in [1..Nrows(L)] ];
+        return psi;
+    end function;
+       
+    I2:=ComputeId(F,2);
+    if  #I2 eq (g-1)*(g-2) div 2 then 
+        print "XG is hyperelliptic"; 
+        return g, I2, F; 
+    end if;
+    assert #I2 eq ((g-2)*(g-3)) div 2;
+    print "XG is not hyperelliptic";
+
+    if g eq 3 then
+        I4:=ComputeId(F,4); f:=I4[1];
+ 
+        // We have a model of X_G as a plane quartic with integer coefficients given by f=0.
+        // We can use a built in Magma function to choose a nicer f.
+        PZ<[x]>:=PolynomialRing(Integers(),#F);
+        f,A:=MinimizeReducePlaneQuartic(PZ!f); 
+        A:=A^(-1);
+        F:=[ &+[A[i,j]*F[j]: j in [1..3]] : i in [1..3] ];
+
+        if ReturnBasis then return g, [f], F; else return g, [f]; end if;
+    end if;
+
+    mon3:=[m: m in MonomialsOfWeightedDegree(Pol,3)];
+    V:=VectorSpace(Rationals(),#mon3);
+    W:=sub<V| [V![MonomialCoefficient(x[i]*f,m): m in mon3] : i in [1..g], f in I2]>;
+
+    if Dimension(W) eq (g-3)*(g^2+6*g-10) div 6 then
+        if ReturnBasis then return g, I2, F; else return g, I2; end if;
+    end if;
+    assert Dimension(W) eq ((g-3)*(g^2+6*g-10) div 6) - (g-3);
+
+    I3:=ComputeId(F,3);
+    V3:=sub<V| [V![MonomialCoefficient(f,m): m in mon3] : f in I3]>;
+
+    J:=[];
+    i:=1;
+    while Dimension(W) lt Dimension(V3) do
+        v:=V![MonomialCoefficient(I3[i],m): m in mon3];
+        if v notin W then 
+            W:=sub<V|Generators(W) join {v}>; 
+            J:=J cat [I3[i]];
+        end if;
+        i:=i+1;
+    end while;
+    psi:=I2 cat J;
+
+    if ReturnBasis then return g, psi, F; else return g, psi; end if;
+end function;
+
+
+
+function reduce(G,n)
+  H:=GL(2,Integers(n));
+  R:=sub<H|Generators(G)>;
+  return R;
+end function;
+
+
+function liftlevel(G,r,s)
+  bigG := GL(2,Integers(s));
+  redhom := hom<bigG -> GL(2,Integers(r)) | x :-> GL(2,Integers(r))!Eltseq(x)>;
+  newgens := [];
+  for k in Generators(Kernel(redhom)) do
+    Append(~newgens,bigG!k);
+  end for;
+  F := Factorization(s);
+  coprime := 1;
+  if not (&and [ GCD(F[i][1],r) ne 1 : i in [1..#F]]) then
+    coprime := &*[ F[i][1]^F[i][2] : i in [1..#F] | GCD(F[i][1],r) eq 1];
+  end if;
+  for k in Generators(G) do
+    // Take k and make it a matrix mod s with determinant that's a unit
+    // mod coprime
+    newelt := bigG![CRT([Integers()!k[1][1],1],[r,coprime]),
+    CRT([Integers()!k[1][2],0],[r,coprime]),
+    CRT([Integers()!k[2][1],0],[r,coprime]),
+    CRT([Integers()!k[2][2],1],[r,coprime])];
+    Append(~newgens,newelt);
+  end for;
+  return sub<bigG | newgens>;
+end function;
+
+
+function genus2(G)
+  GG := sub<GL(2,BaseRing(G)) | SetToSequence(Generators(G)) cat [GL(2,BaseRing(G))![-1,0,0,-1]]>;
+  md := Modulus(BaseRing(GG));
+  H := SL(2,Integers(md));
+  S := H![0,-1,1,0];
+  T := H![1,1,0,1];
+  phi, perm := CosetAction(H,GG meet H);
+  lst := [phi(S),phi(T),phi(S*T)];
+  //printf "Permutation for S = %o.\n",phi(S);
+  //printf "Permutation for T = %o.\n",phi(T);
+  //printf "Permutation for S*T = %o.\n",phi(S*T);
+  cs := [CycleStructure(lst[i]) : i in [1..3]];
+  gen := -2*Degree(perm) + 2;
+  einfty := #Orbits(sub<perm | lst[2]>);
+  e2 := #Fix(lst[1]);
+  e3 := #Fix(lst[3]);
+  ind := Degree(perm);
+  for j in [1..3] do
+    for i in [1..#cs[j]] do
+      gen := gen + (cs[j][i][1]-1)*cs[j][i][2];
+    end for;
+  end for;
+  gen := gen div 2;
+  //printf "The genus = %o.\n",gen;
+  genhur := 1 + (ind/12) - (e2/4) - (e3/3) - (einfty/2);
+  //printf "The Hurwitz formula is %o = 1 + %o/12 - %o/4 - %o/3 - %o/2.\n",genhur, ind,e2,e3,einfty;
+  return gen, ind, einfty, e2, e3;
+end function;
+
+function liftlevel(G,r,s)
+  bigG := GL(2,Integers(s));
+  redhom := hom<bigG -> GL(2,Integers(r)) | x :-> GL(2,Integers(r))!Eltseq(x)>;
+  newgens := [];
+  for k in Generators(Kernel(redhom)) do
+    Append(~newgens,bigG!k);
+  end for;
+  F := Factorization(s);
+  coprime := 1;
+  if not (&and [ GCD(F[i][1],r) ne 1 : i in [1..#F]]) then
+    coprime := &*[ F[i][1]^F[i][2] : i in [1..#F] | GCD(F[i][1],r) eq 1];
+  end if;
+  for k in Generators(G) do
+    // Take k and make it a matrix mod s with determinant that's a unit
+    // mod coprime
+    newelt := bigG![CRT([Integers()!k[1][1],1],[r,coprime]),
+    CRT([Integers()!k[1][2],0],[r,coprime]),
+    CRT([Integers()!k[2][1],0],[r,coprime]),
+    CRT([Integers()!k[2][2],1],[r,coprime])];
+    Append(~newgens,newelt);
+  end for;
+  return sub<bigG | newgens>;
+end function;
+
+function realize(G2,n);
+GL:=GL(2,Integers(n));
+J:=GL![1,0,0,-1];
+a:=false;
+H:=GL![1,0,0,1];
+for i:= 0 to 54 do 
+T:=GL![1,i,0,1];
+if Conjugate(Conjugate(G2, T),J) eq Conjugate(G2, T) then H:=T; a:=true; end if;
+end for;
+assert a;
+G:=Conjugate(G2,H);
+assert Conjugate(G,J) eq G;
+return G;
+end function; 
+
+
+
+
+
+
+
+ GL54:=GL(2,Integers(54));
+
+Overgroup1:=sub<GL54|[19,36,0,1],[41,19,18,1],[53,0,0,53],[53,0,0,17],[13,24,18,19],[11,6,24,5],[4,51,15,25],[37,0,36,19],[1,36,0,1]>;
+Overgroup2:=sub<GL54|[7,6,36,25],[19,36,0,1],[53,0,0,53],[31,36,30,37],[53,39,27,26],[41,36,18,5],[49,48,23,35],[5,18,36,41],[37,36,0,1]>;
+Overgroup3:=sub<GL54|[1,30,30,25],[53,0,0,53],[1,0,18,19],[1,18,0,1],[37,36,0,1],[25,12,0,25],[11,0,0,11],[20,39,39,53],[37,35,0,53]>;
+Overgroup4:=sub<GL54|[1,41,36,53],[35,18,36,17],[53,0,0,53],[28,21,39,26],[37,18,0,1],[19,0,0,1],[35,51,6,19],[17,6,0,47],[1,48,36,19],[37,18,0,19]>;
+Overgroup5:=sub<GL54|[53,0,18,53],[37,48,36,37],[19,36,0,1],[53,0,0,53],[19,0,0,1],[37,30,39,17],[53,36,18,17],[31,17,36,17],[37,21,48,35]>;
+Overgroup6:=sub<GL54|[13,8,51,5],[37,0,0,1],[53,0,0,53],[35,0,0,35],[5,0,9,13],[47,15,0,7],[34,9,9,25],[38,3,27,11],[47,0,0,47]>;
+Overgroup7:=sub<GL54|[47,27,27,28],[1,27,27,2],[40,9,27,1],[28,27,27,31],[37,36,0,1],[1,48,0,1],[31,44,48,49],[37,12,36,19],[1,36,0,1],[37,36,0,19]>;
+Overgroup8:=sub<GL54|[47,27,27,28],[1,0,0,29],[40,9,27,1],[1,0,0,31], [37,36,0,1], [1,48,0,1],[31,44,48,49], [37,12,36,19], [1,36,0,1],[37,36,0,19]>;
+Overgroup9:=sub<GL54|[20,27,27,1],[1,27,27,2],[13,9,27,28],[28,27,27,31],[28,27,27,31],[1,48,0,1],[31,44,48,49],[37,12,36,19],[1,36,0,1],[37,36,0,19]>;
+Overgroup10:=sub<GL54|[47,0,0,1],[1,27,27,2],[13,36,0,1],[28,27,27,31],[37,36,0,1],[1,48,0,1],[31,44,48,49],[37,12,36,19],[1,36,0,1],[37,36,0,19]>;

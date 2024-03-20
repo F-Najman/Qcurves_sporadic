@@ -1,0 +1,17 @@
+E1:=EllipticCurveWithjInvariant(3^2*23^3/(2^6));
+R<x> := PolynomialRing(Rationals());
+Factorization(DivisionPolynomial(E1,2));
+Factorization(DivisionPolynomial(E1,4) div DivisionPolynomial(E1,2));
+Factorization(DivisionPolynomial(E1,8) div DivisionPolynomial(E1,4));
+
+//We see that any point on X_0(8) associated to E1 has even degree.
+
+K<a>:=NumberField(x^3 + 1/4*x^2 + 256/121*x + 64/1089);
+
+//K is the field over which E1 gains a point of order 2.
+
+E:=ChangeRing(E1,K);
+E2:=IsogenyFromKernel(E,Factorization(DivisionPolynomial(E,2))[1,1]);
+Factorization(DivisionPolynomial(E2,4) div DivisionPolynomial(E2,2));
+
+//We see that any point on X_1(4) associated to E2 has even degree. The arguments for elliptic curves with j-invariant -3^3*11^3/2^2, -3^3*13*479^3/2^(14), 3^3*13/2^2 are similar.

@@ -1,0 +1,93 @@
+
+//9J0-9a
+F<t,s> := FunctionField(Rationals(),2);
+j1 := 1728+t^2;
+j9:= (s^3 - 3*s + 1) / (s^2 - s);
+b3 := j9^3;
+j2 := (b3+3)^3*(b3+27)/b3;
+pol := Numerator(j1-j2);
+C := Curve(AffineSpace(Rationals(),2),pol);
+C2 := ProjectiveClosure(C);
+Genus(C2);
+f,C1,m:=IsHyperelliptic(C2);
+J:=Jacobian(C1);
+RankBound(J);
+pts:=Chabauty0(J);
+pts;
+for i:=1 to #pts do
+Points(pts[i] @@ m);
+end for;
+
+pt := C2![1,0,0];
+plac := Places(pt);
+printf "The singular point %o has %o places above it.\n",pt,#plac;
+pt1 := plac[1];
+pt2 := plac[2];
+pt3 := plac[3];
+pt4 := plac[4];
+FF := FunctionField(C2);
+jmap := 1728+FF.1^2;
+Evaluate(jmap,pt1);
+Evaluate(jmap,pt2);
+Evaluate(jmap,pt3);
+Evaluate(jmap,pt4);
+
+//9J0-9b
+F<t,s> := FunctionField(Rationals(),2);
+j1 := 1728+t^2;
+j9:= −18*(s^2 - 1) / (s^3 - 3*s^2 - 9*s + 3);
+b3 := j9^3;
+j2 := (b3+3)^3*(b3+27)/b3;
+pol := Numerator(j1-j2);
+C := Curve(AffineSpace(Rationals(),2),pol);
+C2 := ProjectiveClosure(C);
+Genus(C2);
+f,C1,m:=IsHyperelliptic(C2);
+J:=Jacobian(C1);
+RankBound(J);
+pts:=Chabauty0(J);
+
+for i:=1 to #pts do
+Points(pts[i] @@ m);
+end for;
+
+pt := C2![1,0,0];
+plac := Places(pt);
+printf "The singular point %o has %o places above it.\n",pt,#plac;
+pt1 := plac[1];
+pt2 := plac[2];
+pt3 := plac[3];
+pt4 := plac[4];
+FF := FunctionField(C2);
+jmap := 1728+FF.1^2;
+Evaluate(jmap,pt1);
+Evaluate(jmap,pt2);
+Evaluate(jmap,pt3);
+Evaluate(jmap,pt4);
+
+
+
+//9J0-9c
+F<t,s> := FunctionField(Rationals(),2);
+j1 := 1728+t^2;
+j9:= 3*(s^3 + 3*s^2 - 9*s - 3) / (s^3 - 3*s^2 - 9*s + 3);
+b3 := j9^3;
+j2 := (b3+3)^3*(b3+27)/b3;
+pol := Numerator(j1-j2);
+C := Curve(AffineSpace(Rationals(),2),pol);
+C2 := ProjectiveClosure(C);
+Genus(C2);
+f,C1,m:=IsHyperelliptic(C2);
+J:=Jacobian(C1);
+RankBound(J);
+pts:=Chabauty0(J);
+pts;
+
+
+
+
+
+
+
+
+

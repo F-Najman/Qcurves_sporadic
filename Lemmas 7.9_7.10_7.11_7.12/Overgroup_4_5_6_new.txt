@@ -1,0 +1,70 @@
+load "load.txt";
+GL18:=GL(2,Integers(18));
+G4:=reduce(Overgroup4,18);
+G5:=reduce(Overgroup5,18);
+G6:=reduce(Overgroup6,18);
+G7:=reduce(Overgroup7,18);
+G8:=reduce(Overgroup8,18);
+G9:=reduce(Overgroup9,18);
+G10:=reduce(Overgroup10,18);
+MinimalOvergroups(GL18, G4);
+S:=SL(2,Integers(18));
+G:=GL(2,Integers(18));
+S1:=MinimalOvergroups(G,S)[1];
+assert GL2DeterminantIndex(S1) eq 3;
+IsConjugate(S1, S1 meet G5,S1 meet G6);
+IsConjugate(S1, S1 meet G4,S1 meet G6);
+// this shows that all the curves are isomorphic over Q(\zeta_9)^+
+
+
+//G7 computations. We first show that such an elliptic curve has full 2-torsion over Q(zeta_9)^+
+
+f,psi,F:=FindCanonicalModel(realize(reduce(Overgroup4,18),18),400: ReturnBasis:=true);
+K:=Parent(Coefficients(F[1])[1]);
+L<q>:=LaurentSeriesRing(K,400);
+F:=[&+[Coefficient(L!f,3*n)*q^n : n in [1..133]] : f in F]; //q^3 -> q
+L<q>:=LaurentSeriesRing(K,133);
+F:=[L!f : f in F];
+f1:=F[1];
+f2:=F[2];
+f1:=f1/Coefficient(f1,1);
+f2:=f2/Coefficient(f2,3); 
+x:=f1/f2;
+y:=q*Derivative(x)/f2;
+y:=-y/2;
+x:=x+O(q^128);
+dif:=y^2-x^5;
+a4:=Coefficient(dif,-8);
+dif:=dif-a4*x^4;
+a3:=Coefficient(dif,-6);
+dif:=dif-a3*x^3;
+a2:=Coefficient(dif,-4);
+dif:=dif-a2*x^2;
+a1:=Coefficient(dif,-2);
+dif:=dif-a1*x;
+a0:=Coefficient(dif,0);
+dif:=dif-a0;
+dif;
+P<z>:=PolynomialRing(K);
+f:=z^5+a4*z^4+a3*z^3+a2*z^2+a1*z+a0;
+C:=HyperellipticCurve(f);
+K:=Subfields(CyclotomicField(9),3)[1,1];
+CQ:=ChangeRing(HyperellipticCurve(f),Rationals());
+C:=ChangeRing(CQ,K);
+aut:=Automorphisms(C);
+G:=AutomorphismGroup(C,[aut[6]]);
+E,f:=CurveQuotient(G);
+assert Genus(E) eq 1;
+DescentInformation(E);
+g,m:=TorsionSubgroup(E);
+pts:=Points(C:Bound:=10);
+#g;
+A:={@ @};
+for i:=1 to #g do 
+A:= A join Points((m(i*g.2)) @@ f);
+A:= A join Points(m(g.1+i*g.2) @@ f);
+end for;
+assert pts eq A;
+assert GL2RationalCuspCount(G4) eq 3 and GL2CuspCount(G4) eq 6;
+
+
